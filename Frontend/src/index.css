@@ -1,0 +1,222 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Professional News Dashboard Design System - All colors MUST be HSL */
+
+@layer base {
+  :root {
+    /* Core colors - Professional news theme */
+    --background: 0 0% 99%;
+    --foreground: 222 84% 5%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 84% 5%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 84% 5%;
+
+    /* News brand colors */
+    --primary: 214 84% 16%;
+    --primary-foreground: 0 0% 98%;
+    --primary-hover: 214 84% 20%;
+
+    --secondary: 217 33% 97%;
+    --secondary-foreground: 222 84% 5%;
+    --secondary-hover: 217 33% 94%;
+
+    --muted: 217 33% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 214 84% 96%;
+    --accent-foreground: 214 84% 16%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 214 84% 16%;
+
+    /* News-specific colors */
+    --news-header: 214 84% 16%;
+    --news-accent: 39 100% 57%;
+    --news-like: 0 84% 60%;
+    --news-success: 142 76% 36%;
+
+    /* Gradients */
+    --gradient-hero: linear-gradient(135deg, hsl(214 84% 16%), hsl(214 84% 20%));
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(217 33% 99%));
+    --gradient-accent: linear-gradient(135deg, hsl(39 100% 57%), hsl(39 100% 50%));
+
+    /* Shadows */
+    --shadow-card: 0 1px 3px 0 hsl(222 84% 5% / 0.1), 0 1px 2px 0 hsl(222 84% 5% / 0.06);
+    --shadow-card-hover: 0 4px 6px -1px hsl(222 84% 5% / 0.1), 0 2px 4px -1px hsl(222 84% 5% / 0.06);
+    --shadow-modal: 0 20px 25px -5px hsl(222 84% 5% / 0.1), 0 10px 10px -5px hsl(222 84% 5% / 0.04);
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    /* Dark mode - Premium news reading experience */
+    --background: 222 84% 4%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 47% 7%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 7%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 214 84% 56%;
+    --primary-foreground: 222 84% 4%;
+    --primary-hover: 214 84% 60%;
+
+    --secondary: 217 33% 15%;
+    --secondary-foreground: 210 40% 98%;
+    --secondary-hover: 217 33% 18%;
+
+    --muted: 217 33% 15%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 217 33% 15%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 214 84% 56%;
+
+    /* Dark mode gradients */
+    --gradient-hero: linear-gradient(135deg, hsl(214 84% 16%), hsl(214 84% 20%));
+    --gradient-card: linear-gradient(180deg, hsl(222 47% 7%), hsl(222 47% 9%));
+    --gradient-accent: linear-gradient(135deg, hsl(39 100% 57%), hsl(39 100% 50%));
+
+    /* Dark mode shadows */
+    --shadow-card: 0 1px 3px 0 hsl(0 0% 0% / 0.3), 0 1px 2px 0 hsl(0 0% 0% / 0.2);
+    --shadow-card-hover: 0 4px 6px -1px hsl(0 0% 0% / 0.3), 0 2px 4px -1px hsl(0 0% 0% / 0.2);
+    --shadow-modal: 0 20px 25px -5px hsl(0 0% 0% / 0.4), 0 10px 10px -5px hsl(0 0% 0% / 0.3);
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  /* News card component */
+  .news-card {
+    @apply bg-card rounded-lg shadow-[var(--shadow-card)] border border-border/50 
+           transition-all duration-300 hover:shadow-[var(--shadow-card-hover)] 
+           hover:scale-[1.02] cursor-pointer;
+  }
+
+  /* Category pill */
+  .category-pill {
+    @apply px-4 py-2 rounded-full font-medium transition-all duration-200
+           border border-border/50 hover:border-primary/50;
+  }
+
+  .category-pill-active {
+    @apply bg-primary text-primary-foreground border-primary shadow-sm;
+  }
+
+  /* Action buttons */
+  .action-button {
+    @apply inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium
+           rounded-md transition-all duration-200 border;
+  }
+
+  .action-button-primary {
+    @apply bg-primary text-primary-foreground border-primary 
+           hover:bg-[hsl(var(--primary-hover))] hover:scale-105;
+  }
+
+  .action-button-secondary {
+    @apply bg-secondary text-secondary-foreground border-border 
+           hover:bg-[hsl(var(--secondary-hover))] hover:scale-105;
+  }
+
+  /* Loading animations */
+  @keyframes pulse-news {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.4;
+    }
+  }
+
+  @keyframes slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .animate-pulse-news {
+    animation: pulse-news 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.3s ease-out;
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.2s ease-out;
+  }
+
+  /* Skeleton loader */
+  .skeleton {
+    @apply bg-muted animate-pulse-news rounded;
+  }
+}
