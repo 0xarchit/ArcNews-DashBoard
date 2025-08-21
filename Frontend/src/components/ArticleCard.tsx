@@ -17,15 +17,18 @@ interface ArticleCardProps {
   onViewContent: (article: Article) => void;
   onLikeUpdate?: (articleId: number, newLikeCount: number, isLiked: boolean) => void;
   showCategory?: boolean;
+  activeCategory?: NewsCategory; // current page category as fallback
 }
 
 const DEFAULT_IMAGE = 'https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg';
 
-export const ArticleCard = ({ article, viewMode, onViewSummary, onViewContent, onLikeUpdate, showCategory = false }: ArticleCardProps) => {
+export const ArticleCard = ({ article, viewMode, onViewSummary, onViewContent, onLikeUpdate, showCategory = false, activeCategory }: ArticleCardProps) => {
   const [imageError, setImageError] = useState(false);
   const { user, profile } = useAuth();
   const { toast } = useToast();
   const { addBookmark, removeBookmark, isBookmarked } = useBookmarks();
+  // Use article.category when available, otherwise fall back to the active page category
+  const effectiveCategory = (article.category ?? activeCategory) as NewsCategory;
   const [isLiked, setIsLiked] = useState(() => {
     if (!profile?.username) return false;
     return article.liked_by.includes(profile.username);
@@ -104,7 +107,7 @@ export const ArticleCard = ({ article, viewMode, onViewSummary, onViewContent, o
       return;
     }
 
-    const currentCategory = article.category as NewsCategory;
+  const currentCategory = effectiveCategory;
     if (isBookmarked(article.id, currentCategory)) {
       await removeBookmark(article.id, currentCategory);
     } else {
@@ -150,7 +153,7 @@ export const ArticleCard = ({ article, viewMode, onViewSummary, onViewContent, o
                 onClick={handleBookmark}
                 className="h-7 w-7 sm:h-8 sm:w-8 p-0"
               >
-                {isBookmarked(article.id, article.category as NewsCategory) ? (
+                {isBookmarked(article.id, effectiveCategory) ? (
                   <BookmarkCheck className="h-3 w-3 sm:h-4 sm:w-4" />
                 ) : (
                   <Bookmark className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -192,7 +195,7 @@ export const ArticleCard = ({ article, viewMode, onViewSummary, onViewContent, o
                   onClick={handleBookmark}
                   className="h-6 sm:h-7 w-6 sm:w-7 p-0 text-xs flex-shrink-0"
                 >
-                  {isBookmarked(article.id, article.category as NewsCategory) ? (
+                  {isBookmarked(article.id, effectiveCategory) ? (
                     <BookmarkCheck className="h-3 w-3" />
                   ) : (
                     <Bookmark className="h-3 w-3" />
@@ -278,7 +281,7 @@ export const ArticleCard = ({ article, viewMode, onViewSummary, onViewContent, o
             onClick={handleBookmark}
             className="h-8 w-8 p-0 bg-background/80 backdrop-blur"
           >
-            {isBookmarked(article.id, article.category as NewsCategory) ? (
+            {isBookmarked(article.id, effectiveCategory) ? (
               <BookmarkCheck className="h-4 w-4" />
             ) : (
               <Bookmark className="h-4 w-4" />

@@ -398,6 +398,7 @@ const Index = () => {
                         onViewSummary={handleViewSummary}
                         onViewContent={handleViewContent}
                         showCategory={dashboardState.category === 'all'}
+                        activeCategory={dashboardState.category}
                         onLikeUpdate={(articleId, newLikeCount, isLiked) => {
                           // Update the article in the current data
                           setArticles(prevArticles => 
@@ -426,6 +427,7 @@ const Index = () => {
                         onViewSummary={handleViewSummary}
                         onViewContent={handleViewContent}
                         showCategory={dashboardState.category === 'all'}
+                        activeCategory={dashboardState.category}
                         onLikeUpdate={(articleId, newLikeCount, isLiked) => {
                           // Update the article in the current data
                           setArticles(prevArticles => 

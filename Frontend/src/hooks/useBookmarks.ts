@@ -153,6 +153,14 @@ export const useBookmarks = () => {
 
   const addBookmark = async (article: Article, category: NewsCategory) => {
     if (!user) return;
+    if (!category) {
+      toast({
+        title: "Error",
+        description: "Unable to determine article category",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
       const { error } = await supabase.from("bookmarks").insert({
