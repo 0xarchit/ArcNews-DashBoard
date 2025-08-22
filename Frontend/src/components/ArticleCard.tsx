@@ -59,7 +59,7 @@ export const ArticleCard = ({ article, viewMode, onViewSummary, onViewContent, o
     setLikesCount(prev => isLiked ? prev - 1 : prev + 1);
 
     try {
-      await toggleLike(profile.username, article.category, article.id);
+  await toggleLike(profile.user_id, profile.username, article.category, article.id);
       onLikeUpdate?.(article.id, isLiked ? likesCount - 1 : likesCount + 1, !isLiked);
     } catch (error) {
       // Revert optimistic update on error

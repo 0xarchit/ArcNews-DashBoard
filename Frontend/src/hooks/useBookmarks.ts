@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Article, NewsCategory } from "@/types/news";
 import { useAuth } from "./useAuth";
 import { useToast } from "./use-toast";
+import { getCachedPost, setCachedPost, clearCachedPost } from "@/utils/cache";
+import { fetchPost } from "@/utils/api";
 
 interface Bookmark {
   id: string;
@@ -79,6 +81,23 @@ async function fetchBookmarksShared(
       );
       cacheUserId = userId;
       cacheUpdatedAt = Date.now();
+
+      // Prefetch and cache post details for any missing items (best-effort)
+      // Run sequentially with small concurrency to avoid flooding the API
+      const toFetch = cachedBookmarks.filter(
+        (b) => !getCachedPost(b.article_category as NewsCategory, b.article_id)
+      );
+      for (const b of toFetch) {
+        try {
+          const post = await fetchPost(
+            b.article_category as NewsCategory,
+            b.article_id
+          );
+          setCachedPost(b.article_category as NewsCategory, b.article_id, post);
+        } catch (e) {
+          // ignore fetch errors; cache remains cold
+        }
+      }
     } catch (error) {
       console.error("Error fetching bookmarks:", error);
       toast?.({
@@ -183,6 +202,18 @@ export const useBookmarks = () => {
       notify();
       await fetchBookmarksShared(user.id, toast);
 
+      // Store or refresh the post cache for this newly bookmarked article
+      try {
+        const existing = getCachedPost(category, article.id);
+        if (!existing) {
+          // If article isn't full, or likes might be stale, fetch to hydrate
+          const post = await fetchPost(category, article.id);
+          setCachedPost(category, article.id, post);
+        } else {
+          setCachedPost(category, article.id, existing);
+        }
+      } catch {}
+
       toast({
         title: "Bookmarked",
         description: "Article saved to bookmarks",
@@ -225,6 +256,11 @@ export const useBookmarks = () => {
         (b) => !(b.article_id === articleId && b.article_category === category)
       );
       notify();
+
+      // Clear the per-article post cache so next view reflects unbookmarked state if needed
+      try {
+        clearCachedPost(category, articleId);
+      } catch {}
 
       toast({
         title: "Removed",

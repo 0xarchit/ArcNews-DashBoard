@@ -13,10 +13,10 @@ def format_date(pubdate_str: str) -> str:
         return pubdate_str
 
 app = FastAPI()
-
+# middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://newsdb.0xarc.workers.dev"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

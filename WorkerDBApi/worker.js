@@ -27,7 +27,7 @@ async function refreshDatabase(env) {
   }
 
   for (const category of categories) {
-    const newsApiUrl = `add your deployed url`;
+    const newsApiUrl = `news_api_url`;
     let data = [];
     try {
       const response = await fetch(newsApiUrl, {
@@ -186,12 +186,13 @@ export default {
     }
 
     if (url.pathname === '/likecnt' && request.method === 'GET') {
-      const username = url.searchParams.get('username');
+      const usernameParam = url.searchParams.get('username');
       const category = url.searchParams.get('category');
       const id = url.searchParams.get('id');
+      const userid = url.searchParams.get('userid');
 
-      if (!username) {
-        return new Response(JSON.stringify({ error: 'Username parameter is required' }), {
+      if (!userid) {
+        return new Response(JSON.stringify({ error: 'userid parameter is required' }), {
           status: 400,
           headers: { ...getCorsHeaders(), 'Content-Type': 'application/json' }
         });
@@ -216,6 +217,64 @@ export default {
       }
 
       try {
+        const supabaseUrl = "apiurl";
+        const supabaseKey = "";
+
+        if (!supabaseUrl || !supabaseKey) {
+          return new Response(JSON.stringify({ error: 'Server configuration error: Supabase credentials are not set' }), {
+            status: 500,
+            headers: { ...getCorsHeaders(), 'Content-Type': 'application/json' }
+          });
+        }
+
+        let verifiedUsername = null;
+        try {
+          const supaResp = await fetch(
+            `${supabaseUrl.replace(/\/$/, '')}/rest/v1/profiles?select=user_id,username&user_id=eq.${encodeURIComponent(userid)}&limit=1`,
+            {
+              headers: {
+                'apikey': supabaseKey,
+                'Authorization': `Bearer ${supabaseKey}`,
+              },
+            }
+          );
+          if (!supaResp.ok) {
+            const body = await supaResp.text();
+            throw new Error(`Supabase request failed: ${supaResp.status} ${body}`);
+          }
+          const rows = await supaResp.json();
+          if (!Array.isArray(rows) || rows.length === 0) {
+            return new Response(JSON.stringify({ error: 'Invalid request: user does not exist' }), {
+              status: 400,
+              headers: { ...getCorsHeaders(), 'Content-Type': 'application/json' }
+            });
+          }
+          verifiedUsername = rows[0].username || null;
+
+          if (usernameParam && verifiedUsername && usernameParam !== verifiedUsername) {
+            return new Response(JSON.stringify({ error: 'Invalid request: username does not match user' }), {
+              status: 400,
+              headers: { ...getCorsHeaders(), 'Content-Type': 'application/json' }
+            });
+          }
+        } catch (e) {
+          console.error('Error validating user with Supabase:', e);
+          if (!(e && String(e.message || '').includes('Invalid request: user does not exist'))) {
+            return new Response(JSON.stringify({ error: 'Failed to validate user' }), {
+              status: 502,
+              headers: { ...getCorsHeaders(), 'Content-Type': 'application/json' }
+            });
+          }
+        }
+
+        const effectiveUsername = usernameParam || verifiedUsername;
+        if (!effectiveUsername) {
+          return new Response(JSON.stringify({ error: 'Unable to resolve username for user' }), {
+            status: 400,
+            headers: { ...getCorsHeaders(), 'Content-Type': 'application/json' }
+          });
+        }
+
         const article = await env.DB.prepare(
           `SELECT likes, liked_by FROM ${category} WHERE id = ?`
         )
@@ -243,8 +302,8 @@ export default {
           });
         }
 
-        if (likedBy.includes(username)) {
-          likedBy = likedBy.filter(user => user !== username);
+        if (likedBy.includes(effectiveUsername)) {
+          likedBy = likedBy.filter(user => user !== effectiveUsername);
           const newLikes = Math.max(0, (article.likes || 0) - 1);
           try {
             await env.DB.prepare(
@@ -252,7 +311,7 @@ export default {
             )
               .bind(newLikes, JSON.stringify(likedBy), id)
               .run();
-            console.log(`Removed like for article id ${id} in ${category} by ${username}`);
+            console.log(`Removed like for article id ${id} in ${category} by ${effectiveUsername} (userid: ${userid})`);
             return new Response(JSON.stringify({ likes: newLikes, liked_by: likedBy }), {
               status: 200,
               headers: { ...getCorsHeaders(), 'Content-Type': 'application/json' }
@@ -265,7 +324,7 @@ export default {
             });
           }
         } else {
-          likedBy.push(username);
+          likedBy.push(effectiveUsername);
           const newLikes = (article.likes || 0) + 1;
           try {
             await env.DB.prepare(
@@ -273,7 +332,7 @@ export default {
             )
               .bind(newLikes, JSON.stringify(likedBy), id)
               .run();
-            console.log(`Incremented likes for article id ${id} in ${category} by ${username}`);
+            console.log(`Incremented likes for article id ${id} in ${category} by ${effectiveUsername} (userid: ${userid})`);
             return new Response(JSON.stringify({ likes: newLikes, liked_by: likedBy }), {
               status: 200,
               headers: { ...getCorsHeaders(), 'Content-Type': 'application/json' }
@@ -289,6 +348,66 @@ export default {
       } catch (error) {
         console.error(`Error querying article id ${id} in ${category}:`, error);
         return new Response(JSON.stringify({ error: 'Failed to fetch article: ' + error.message }), {
+          status: 500,
+          headers: { ...getCorsHeaders(), 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
+    if (url.pathname === '/post' && request.method === 'GET') {
+      const category = url.searchParams.get('category');
+      const id = url.searchParams.get('id');
+
+      if (!category) {
+        return new Response(JSON.stringify({ error: 'Category parameter is required' }), {
+          status: 400,
+          headers: { ...getCorsHeaders(), 'Content-Type': 'application/json' }
+        });
+      }
+      if (!categories.includes(category)) {
+        return new Response(JSON.stringify({ error: `Invalid category. Must be one of: ${categories.join(', ')}` }), {
+          status: 400,
+          headers: { ...getCorsHeaders(), 'Content-Type': 'application/json' }
+        });
+      }
+      if (!id || isNaN(parseInt(id))) {
+        return new Response(JSON.stringify({ error: 'Valid numeric id parameter is required' }), {
+          status: 400,
+          headers: { ...getCorsHeaders(), 'Content-Type': 'application/json' }
+        });
+      }
+
+      try {
+        const row = await env.DB.prepare(
+          `SELECT * FROM ${category} WHERE id = ?`
+        )
+          .bind(id)
+          .first();
+
+        if (!row) {
+          return new Response(JSON.stringify({ error: 'Article not found' }), {
+            status: 404,
+            headers: { ...getCorsHeaders(), 'Content-Type': 'application/json' }
+          });
+        }
+
+        if (row.liked_by) {
+          try {
+            const parsed = JSON.parse(row.liked_by);
+            if (Array.isArray(parsed)) {
+              row.liked_by = parsed;
+            }
+          } catch (_) {
+          }
+        }
+
+        return new Response(JSON.stringify(row), {
+          status: 200,
+          headers: { ...getCorsHeaders(), 'Content-Type': 'application/json' }
+        });
+      } catch (error) {
+        console.error(`Error fetching post id ${id} from ${category}:`, error);
+        return new Response(JSON.stringify({ error: 'Failed to fetch post: ' + error.message }), {
           status: 500,
           headers: { ...getCorsHeaders(), 'Content-Type': 'application/json' }
         });
@@ -354,7 +473,7 @@ export default {
         }
 
         try {
-          const response = await fetch('add extract url', {
+          const response = await fetch('extract_url', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

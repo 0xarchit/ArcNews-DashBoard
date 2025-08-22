@@ -4,7 +4,12 @@ import {
   NewsCategory,
   LastUpdateResponse,
 } from "@/types/news";
-import { getCachedNews, setCachedNews } from "./cache";
+import {
+  getCachedNews,
+  setCachedNews,
+  getCachedPost,
+  setCachedPost,
+} from "./cache";
 
 // Base URL for API from environment
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -112,6 +117,50 @@ export const fetchArticleSummary = async (
   }
 };
 
+// De-dupe in-flight single-post requests
+const inflightPosts = new Map<string, Promise<Article>>();
+
+// Fetch a single post (full article) by category and id
+export const fetchPost = async (
+  category: NewsCategory,
+  id: number
+): Promise<Article> => {
+  // Try post cache first
+  const cached = getCachedPost(category, id);
+  if (cached) return cached;
+  const key = `${category}:${id}`;
+  const existing = inflightPosts.get(key);
+  if (existing) return existing;
+  try {
+    const promise = fetchWithTimeout(
+      `${API_BASE_URL}/post?category=${category}&id=${id}`
+    )
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new APIError(
+            `Failed to fetch post: ${response.statusText}`,
+            response.status
+          );
+        }
+        const article: Article = await response.json();
+        // Cache the single post
+        setCachedPost(category, id, article);
+        return article;
+      })
+      .finally(() => {
+        inflightPosts.delete(key);
+      });
+    inflightPosts.set(key, promise);
+    const article = await promise;
+    return article;
+  } catch (error) {
+    if (error instanceof APIError) {
+      throw error;
+    }
+    throw new APIError("Failed to fetch post");
+  }
+};
+
 export const fetchLastUpdate = async (): Promise<LastUpdateResponse | null> => {
   try {
     const response = await fetchWithTimeout(`${API_BASE_URL}/lastupdate`);
@@ -129,15 +178,16 @@ export const fetchLastUpdate = async (): Promise<LastUpdateResponse | null> => {
 };
 
 export const toggleLike = async (
+  userId: string,
   username: string,
   category: NewsCategory,
   id: number
 ): Promise<void> => {
   try {
     const response = await fetchWithTimeout(
-      `${API_BASE_URL}/likecnt?username=${encodeURIComponent(
-        username
-      )}&category=${category}&id=${id}`
+      `${API_BASE_URL}/likecnt?userid=${encodeURIComponent(
+        userId
+      )}&username=${encodeURIComponent(username)}&category=${category}&id=${id}`
     );
 
     if (!response.ok) {
@@ -159,6 +209,5 @@ export const refreshNews = async (): Promise<void> => {
     await fetchWithTimeout(`${API_BASE_URL}/refresh`, 60000); // 60 seconds timeout for refresh
   } catch (error) {
     console.warn("Failed to trigger news refresh:", error);
-    // Don't throw, refresh is best-effort
   }
 };

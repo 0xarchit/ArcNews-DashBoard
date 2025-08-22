@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { getCachedPost } from "@/utils/cache";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -112,20 +113,24 @@ const Profile = () => {
   };
 
   // Convert bookmarks to articles for sorting
-  const bookmarksAsArticles = bookmarks.map(bookmark => ({
-    id: bookmark.article_id,
-    title: bookmark.article_title,
-    description: '',
-    url: bookmark.article_url,
-    urlToImage: bookmark.article_image_url,
-    publishedAt: bookmark.article_published_at,
-    source: bookmark.article_source,
-    category: bookmark.article_category as NewsCategory,
-    likes: 0,
-    liked_by: [],
-    summary: '',
-    content: '',
-  }));
+  const bookmarksAsArticles = bookmarks.map(bookmark => {
+    const cat = bookmark.article_category as NewsCategory;
+    const post = getCachedPost(cat, bookmark.article_id);
+    return {
+      id: bookmark.article_id,
+      title: bookmark.article_title,
+      description: post?.description || '',
+      url: bookmark.article_url,
+      urlToImage: bookmark.article_image_url,
+      publishedAt: bookmark.article_published_at,
+      source: bookmark.article_source,
+      category: cat,
+      likes: post?.likes ?? 0,
+      liked_by: post?.liked_by ?? [],
+      summary: post?.summary || '',
+      content: post?.content || '',
+    };
+  });
 
   const sortedBookmarks = sortArticles(bookmarksAsArticles, bookmarksSortBy).map(article => 
     bookmarks.find(b => b.article_id === article.id)!

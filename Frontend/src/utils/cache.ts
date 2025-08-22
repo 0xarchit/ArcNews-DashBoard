@@ -1,4 +1,4 @@
-import { NewsResponse, CachedNews, NewsCategory } from "@/types/news";
+import { NewsResponse, CachedNews, NewsCategory, Article } from "@/types/news";
 
 const CACHE_DURATION = 60 * 60 * 1000; // 1 hour in milliseconds
 const CATEGORY_LIST: NewsCategory[] = [
@@ -14,6 +14,10 @@ const MAX_ENTRY_BYTES = 4_000_000; // ~4MB soft limit per entry to avoid quota (
 
 export const getCacheKey = (category: NewsCategory): string =>
   `news:${category}`;
+
+// Per-article post cache keys
+export const getPostCacheKey = (category: NewsCategory, id: number): string =>
+  `post:${category}:${id}`;
 
 export const getCachedNews = (category: NewsCategory): NewsResponse | null => {
   try {
@@ -59,6 +63,63 @@ export const setCachedNews = (
   }
 };
 
+// ---- Post (single-article) cache helpers ----
+type CachedArticle = {
+  ts: string;
+  expiresAt: string;
+  data: Article;
+};
+
+export const getCachedPost = (
+  category: NewsCategory,
+  id: number
+): Article | null => {
+  try {
+    const cacheKey = getPostCacheKey(category, id);
+    const cached = localStorage.getItem(cacheKey);
+    if (!cached) return null;
+    const parsedCache: CachedArticle = JSON.parse(cached);
+    const now = Date.now();
+    if (now < new Date(parsedCache.expiresAt).getTime()) {
+      return parsedCache.data;
+    }
+    localStorage.removeItem(cacheKey);
+    return null;
+  } catch (error) {
+    console.error("Error reading post cache:", error);
+    return null;
+  }
+};
+
+export const setCachedPost = (
+  category: NewsCategory,
+  id: number,
+  article: Article
+): void => {
+  try {
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + CACHE_DURATION);
+    const cacheData: CachedArticle = {
+      ts: now.toISOString(),
+      expiresAt: expiresAt.toISOString(),
+      data: article,
+    };
+    const cacheKey = getPostCacheKey(category, id);
+    trySetItemWithEviction(cacheKey, cacheData);
+  } catch (error) {
+    console.error("Error setting post cache:", error);
+  }
+};
+
+export const clearCachedPost = (category: NewsCategory, id: number): void => {
+  try {
+    const cacheKey = getPostCacheKey(category, id);
+    localStorage.removeItem(cacheKey);
+  } catch (error) {
+    console.error("Error clearing post cache:", error);
+  }
+};
+
 export const clearCache = (category?: NewsCategory): void => {
   try {
     if (category) {
@@ -89,22 +150,28 @@ export const clearExpiredCache = (): void => {
   try {
     const now = Date.now();
 
-    CATEGORY_LIST.forEach((category) => {
-      const cacheKey = getCacheKey(category);
-      const cached = localStorage.getItem(cacheKey);
-
-      if (cached) {
-        try {
-          const parsedCache: CachedNews = JSON.parse(cached);
-          if (now >= new Date(parsedCache.expiresAt).getTime()) {
-            localStorage.removeItem(cacheKey);
-          }
-        } catch (error) {
-          // Invalid cache data, remove it
-          localStorage.removeItem(cacheKey);
-        }
+    // Clear expired for both news and post caches
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key || (!key.startsWith("news:") && !key.startsWith("post:"))) {
+        continue;
       }
-    });
+      const cached = localStorage.getItem(key);
+      if (!cached) continue;
+      try {
+        const parsed: { expiresAt?: string } = JSON.parse(cached);
+        if (!parsed?.expiresAt) {
+          localStorage.removeItem(key);
+          continue;
+        }
+        if (now >= new Date(parsed.expiresAt).getTime()) {
+          localStorage.removeItem(key);
+        }
+      } catch (error) {
+        // Invalid cache data, remove it
+        localStorage.removeItem(key);
+      }
+    }
   } catch (error) {
     console.error("Error clearing expired cache:", error);
   }
@@ -132,7 +199,8 @@ function getAllNewsCacheMeta(): Array<{
   const results: Array<{ key: string; ts: number; size: number }> = [];
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
-    if (!key || !key.startsWith("news:")) continue;
+    if (!key || (!key.startsWith("news:") && !key.startsWith("post:")))
+      continue;
     const raw = localStorage.getItem(key);
     if (!raw) continue;
     try {
@@ -152,7 +220,9 @@ function getAllNewsCacheMeta(): Array<{
   return results.sort((a, b) => a.ts - b.ts); // oldest first
 }
 
-function trySetItemWithEviction(key: string, value: CachedNews) {
+type CachePayload = CachedNews | CachedArticle;
+
+function trySetItemWithEviction(key: string, value: CachePayload) {
   let payload = value;
 
   const attempt = () => {
@@ -215,9 +285,9 @@ function trySetItemWithEviction(key: string, value: CachedNews) {
 }
 
 function truncateArticlesToFit(
-  value: CachedNews,
+  value: CachePayload,
   targetBytes: number
-): CachedNews {
+): CachePayload {
   try {
     const articles: any[] = (value as any).data?.articles || [];
     if (!Array.isArray(articles) || articles.length === 0) return value;
@@ -248,7 +318,7 @@ function truncateArticlesToFit(
         articles: articles.slice(0, Math.max(1, best)),
       },
     } as any;
-    return limited as CachedNews;
+    return limited as CachePayload;
   } catch {
     return value;
   }

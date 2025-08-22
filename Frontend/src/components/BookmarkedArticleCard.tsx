@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ExternalLink, Eye, FileText, Heart, Share2, Bookmark, BookmarkCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Article, ViewMode, NewsCategory } from '@/types/news';
 import { Button } from '@/components/ui/button';
 import { formatRelativeTime, formatExactDate, getHostname } from '@/utils/dateUtils';
-import { toggleLike } from '@/utils/api';
+import { toggleLike, fetchPost } from '@/utils/api';
+import { getCachedPost, setCachedPost } from '@/utils/cache';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useBookmarks } from '@/hooks/useBookmarks';
@@ -36,9 +37,47 @@ export const BookmarkedArticleCard = ({ bookmark, viewMode, onViewSummary, onVie
   const { user, profile } = useAuth();
   const { toast } = useToast();
   const { removeBookmark } = useBookmarks();
-  const [isLiked, setIsLiked] = useState(false); // We don't have like info for bookmarks
-  const [likesCount, setLikesCount] = useState(0); // We don't have like info for bookmarks
+  const [isLiked, setIsLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Load like count and liked state using local cache first to avoid repeated API calls
+  useEffect(() => {
+    let cancelled = false;
+    const cat = bookmark.article_category as NewsCategory;
+    const aid = bookmark.article_id;
+    const loadLikes = async () => {
+      try {
+        // Use cached post first
+        const cached = getCachedPost(cat, aid);
+        if (cached) {
+          if (cancelled) return;
+          setLikesCount(cached.likes || 0);
+          if (profile?.username) {
+            setIsLiked(cached.liked_by?.includes(profile.username) || false);
+          }
+          return; // Skip network if we had cache
+        }
+
+        // Fallback to API and cache the result
+        const article = await fetchPost(cat, aid);
+        if (cancelled) return;
+        setLikesCount(article.likes || 0);
+        if (profile?.username) {
+          setIsLiked(article.liked_by?.includes(profile.username) || false);
+        }
+        // Update cache so subsequent cards don't refetch
+        setCachedPost(cat, aid, article);
+      } catch (err) {
+        // Non-blocking: just log; UI will show 0 until user interacts
+        console.warn('Failed to load like info for bookmarked article', err);
+      }
+    };
+    loadLikes();
+    return () => {
+      cancelled = true;
+    };
+  }, [bookmark.article_category, bookmark.article_id, profile?.username]);
 
   // Convert bookmark to Article format
   const article: Article = {
@@ -79,7 +118,28 @@ export const BookmarkedArticleCard = ({ bookmark, viewMode, onViewSummary, onVie
     setLikesCount(prev => isLiked ? prev - 1 : prev + 1);
 
     try {
-      await toggleLike(profile.username, bookmark.article_category as NewsCategory, bookmark.article_id);
+      await toggleLike(
+        profile.user_id,
+        profile.username,
+        bookmark.article_category as NewsCategory,
+        bookmark.article_id
+      );
+      // Update cached post likes state locally for faster subsequent reads
+      const cat = bookmark.article_category as NewsCategory;
+      const aid = bookmark.article_id;
+      const cached = getCachedPost(cat, aid);
+      if (cached) {
+        const updated = {
+          ...cached,
+          likes: previousLiked ? Math.max(0, previousCount - 1) : previousCount + 1,
+          liked_by: profile?.username
+            ? previousLiked
+              ? cached.liked_by.filter((u) => u !== profile.username)
+              : Array.from(new Set([...(cached.liked_by || []), profile.username]))
+            : cached.liked_by,
+        };
+        setCachedPost(cat, aid, updated);
+      }
     } catch (error) {
       // Revert optimistic update on error
       setIsLiked(previousLiked);
