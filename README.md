@@ -11,7 +11,8 @@
 [![Website Status](https://img.shields.io/website-up-down-green-red/https/arcnews.0xarchit.is-a.dev?style=flat-square)](https://arcnews.0xarchit.is-a.dev)
 
 **Live Demo:** [https://arcnews.0xarchit.is-a.dev](https://arcnews.0xarchit.is-a.dev)  
-**GitHub Repo:** [https://github.com/0xarchit/ArcNews-DashBoard/](https://github.com/0xarchit/ArcNews-DashBoard/)
+**GitHub Repo:** [https://github.com/0xarchit/ArcNews-DashBoard/](https://github.com/0xarchit/ArcNews-DashBoard/)  
+**Backend & Frontend Status:** [https://arcnewsapi.0xarchit.is-a.dev](https://arcnewsapi.0xarchit.is-a.dev)
 
 ---
 
