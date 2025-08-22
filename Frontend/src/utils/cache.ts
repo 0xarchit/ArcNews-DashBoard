@@ -120,6 +120,124 @@ export const clearCachedPost = (category: NewsCategory, id: number): void => {
   }
 };
 
+/**
+ * Patch helper to apply a like/unlike toggle into cached entries without
+ * changing their TTL. This ensures that after a user likes a post, a reload
+ * still reflects the correct state even if category caches are up to 1 hour old.
+ */
+function applyToggleLikeToCachedCategory(
+  category: NewsCategory,
+  id: number,
+  username: string
+): { applied: boolean; isLiked?: boolean; newLikes?: number } {
+  try {
+    const cacheKey = getCacheKey(category);
+    const raw = localStorage.getItem(cacheKey);
+    if (!raw) return { applied: false };
+
+    const parsed: CachedNews = JSON.parse(raw);
+    const articles = parsed?.data?.articles ?? [];
+    const idx = articles.findIndex((a: any) => a?.id === id);
+    if (idx === -1) return { applied: false };
+
+    const original = articles[idx] as Article & { liked_by?: string[] };
+    const likedBy = new Set<string>(
+      Array.isArray(original.liked_by) ? original.liked_by : []
+    );
+    const hadLike = likedBy.has(username);
+    const willLike = !hadLike;
+
+    if (willLike) likedBy.add(username);
+    else likedBy.delete(username);
+
+    const likesDelta = willLike ? 1 : -1;
+    const nextLikes = Math.max(
+      0,
+      (original as any).likes + (hadLike === willLike ? 0 : likesDelta)
+    );
+
+    const updated: Article & { liked_by?: string[] } = {
+      ...(original as any),
+      likes: nextLikes,
+      liked_by: Array.from(likedBy),
+    };
+
+    const nextCache: CachedNews = {
+      ts: parsed.ts, // preserve timestamps to keep original TTL
+      expiresAt: parsed.expiresAt,
+      data: {
+        ...parsed.data,
+        articles: [
+          ...articles.slice(0, idx),
+          updated as any,
+          ...articles.slice(idx + 1),
+        ],
+      },
+    };
+
+    // Write back preserving TTL
+    localStorage.setItem(cacheKey, JSON.stringify(nextCache));
+
+    // Also patch the single-post cache if present
+    try {
+      const postKey = getPostCacheKey(category, id);
+      const postRaw = localStorage.getItem(postKey);
+      if (postRaw) {
+        const postParsed: {
+          ts: string;
+          expiresAt: string;
+          data: Article & { liked_by?: string[] };
+        } = JSON.parse(postRaw);
+        const postLikedBy = new Set<string>(
+          Array.isArray(postParsed.data.liked_by)
+            ? postParsed.data.liked_by
+            : []
+        );
+        const postHadLike = postLikedBy.has(username);
+        const postWillLike = !postHadLike;
+        if (postWillLike) postLikedBy.add(username);
+        else postLikedBy.delete(username);
+        const postNextLikes = Math.max(
+          0,
+          (postParsed.data as any).likes +
+            (postHadLike === postWillLike ? 0 : postWillLike ? 1 : -1)
+        );
+        const postNext = {
+          ...postParsed,
+          data: {
+            ...(postParsed.data as any),
+            likes: postNextLikes,
+            liked_by: Array.from(postLikedBy),
+          },
+        };
+        localStorage.setItem(postKey, JSON.stringify(postNext));
+      }
+    } catch {}
+
+    return { applied: true, isLiked: willLike, newLikes: nextLikes };
+  } catch (error) {
+    console.warn("Failed to patch like state into cache:", error);
+    return { applied: false };
+  }
+}
+
+/**
+ * Public helper to apply a like toggle to caches for the specific category and
+ * also the 'all' category when relevant. TTL is preserved.
+ */
+export function applyToggleLikeToCache(
+  category: NewsCategory,
+  id: number,
+  username: string
+): void {
+  // Update the specific category cache
+  applyToggleLikeToCachedCategory(category, id, username);
+  // If different, also update the aggregated 'all' cache copy
+  if (category !== "all") {
+    applyToggleLikeToCachedCategory("all", id, username);
+  }
+}
+
 export const clearCache = (category?: NewsCategory): void => {
   try {
     if (category) {

@@ -11,6 +11,7 @@ import {
   setCachedPost,
   clearCachedPost,
 } from "./cache";
+import { applyToggleLikeToCache } from "./cache";
 
 // Base URL for API from environment
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -198,7 +199,12 @@ export const toggleLike = async (
       );
     }
 
-    // Invalidate cached post to prevent stale like state
+    // Patch cached lists and post to immediately reflect like state while preserving TTL
+    try {
+      applyToggleLikeToCache(category, id, username);
+    } catch {}
+
+    // Optionally clear cached post (kept for safety) so next open refetches fresh server state
     try {
       clearCachedPost(category, id);
     } catch {}

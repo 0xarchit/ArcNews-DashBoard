@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ExternalLink, Eye, FileText, Heart, Share2, Bookmark, BookmarkCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Article, ViewMode, NewsCategory } from '@/types/news';
@@ -17,7 +17,7 @@ interface ArticleCardProps {
   onViewContent: (article: Article) => void;
   onLikeUpdate?: (articleId: number, newLikeCount: number, isLiked: boolean) => void;
   showCategory?: boolean;
-  activeCategory?: NewsCategory; // current page category as fallback
+  activeCategory?: NewsCategory;
 }
 
 const DEFAULT_IMAGE = 'https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg';
@@ -35,6 +35,15 @@ export const ArticleCard = ({ article, viewMode, onViewSummary, onViewContent, o
   });
   const [likesCount, setLikesCount] = useState(article.likes);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Keep local like state in sync when profile or article data changes
+  useEffect(() => {
+    if (!profile?.username) {
+      setIsLiked(false);
+      return;
+    }
+    setIsLiked(Array.isArray(article.liked_by) && article.liked_by.includes(profile.username));
+  }, [profile?.username, article.liked_by, article.id]);
 
   const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();

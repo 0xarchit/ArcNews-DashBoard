@@ -400,13 +400,19 @@ const Index = () => {
                         showCategory={dashboardState.category === 'all'}
                         activeCategory={dashboardState.category}
                         onLikeUpdate={(articleId, newLikeCount, isLiked) => {
-                          // Update the article in the current data
+                          // Update the article in the current data (likes and liked_by for current user)
+                          const username = profile?.username;
                           setArticles(prevArticles => 
-                            prevArticles.map(a => 
-                              a.id === articleId 
-                                ? { ...a, likes: newLikeCount } 
-                                : a
-                            )
+                            prevArticles.map(a => {
+                              if (a.id !== articleId) return a;
+                              let liked_by = Array.isArray(a.liked_by) ? [...a.liked_by] : [];
+                              if (username) {
+                                const has = liked_by.includes(username);
+                                if (isLiked && !has) liked_by.push(username);
+                                if (!isLiked && has) liked_by = liked_by.filter(u => u !== username);
+                              }
+                              return { ...a, likes: newLikeCount, liked_by };
+                            })
                           );
                         }}
                       />
@@ -429,13 +435,19 @@ const Index = () => {
                         showCategory={dashboardState.category === 'all'}
                         activeCategory={dashboardState.category}
                         onLikeUpdate={(articleId, newLikeCount, isLiked) => {
-                          // Update the article in the current data
+                          // Update the article in the current data (likes and liked_by for current user)
+                          const username = profile?.username;
                           setArticles(prevArticles => 
-                            prevArticles.map(a => 
-                              a.id === articleId 
-                                ? { ...a, likes: newLikeCount } 
-                                : a
-                            )
+                            prevArticles.map(a => {
+                              if (a.id !== articleId) return a;
+                              let liked_by = Array.isArray(a.liked_by) ? [...a.liked_by] : [];
+                              if (username) {
+                                const has = liked_by.includes(username);
+                                if (isLiked && !has) liked_by.push(username);
+                                if (!isLiked && has) liked_by = liked_by.filter(u => u !== username);
+                              }
+                              return { ...a, likes: newLikeCount, liked_by };
+                            })
                           );
                         }}
                       />
