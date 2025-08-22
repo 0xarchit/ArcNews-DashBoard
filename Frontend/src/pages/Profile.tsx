@@ -33,7 +33,7 @@ const Profile = () => {
   const [fullName, setFullName] = useState(profile?.full_name || '');
   const [preferredCategory, setPreferredCategory] = useState(profile?.preferred_category || 'all');
   const [defaultSortBy, setDefaultSortBy] = useState(profile?.default_sort_by || 'newest');
-  const [defaultView, setDefaultView] = useState(profile?.default_view || 'list');
+  const [defaultView, setDefaultView] = useState(profile?.default_view || 'grid');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   
@@ -49,6 +49,15 @@ const Profile = () => {
     // run once on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Sync form state when profile loads/changes
+  useEffect(() => {
+    if (!profile) return;
+    setFullName(profile.full_name || '');
+    setPreferredCategory(profile.preferred_category || 'all');
+    setDefaultSortBy(profile.default_sort_by || 'newest');
+    setDefaultView((profile.default_view as any) || 'grid');
+  }, [profile?.full_name, profile?.preferred_category, profile?.default_sort_by, profile?.default_view]);
 
   const categories = [
     'all', 'business', 'entertainment', 'health', 
@@ -75,12 +84,29 @@ const Profile = () => {
     setError('');
 
     try {
-      const { error } = await updateProfile({
-        full_name: fullName,
-        preferred_category: preferredCategory,
-        default_sort_by: defaultSortBy,
-        default_view: defaultView
-      });
+      // Only send changed, valid fields to avoid overwriting others
+      const updates: Record<string, any> = {};
+      const trimmedName = fullName?.trim() ?? '';
+      if (profile?.full_name !== trimmedName && trimmedName.length > 0) {
+        updates.full_name = trimmedName;
+      }
+      if (profile?.preferred_category !== preferredCategory) {
+        updates.preferred_category = preferredCategory;
+      }
+      if (profile?.default_sort_by !== defaultSortBy) {
+        updates.default_sort_by = defaultSortBy;
+      }
+      if (profile?.default_view !== defaultView) {
+        updates.default_view = defaultView;
+      }
+
+      if (Object.keys(updates).length === 0) {
+        toast({ title: 'No changes to save' });
+        setIsLoading(false);
+        return;
+      }
+
+      const { error } = await updateProfile(updates);
 
       if (error) {
         setError(error.message);
