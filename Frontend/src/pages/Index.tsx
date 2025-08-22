@@ -39,13 +39,12 @@ const Index = () => {
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [modalMode, setModalMode] = useState<'summary' | 'content' | null>(null);
   
-  // Dashboard state - always start with default category on page reload
+  // Dashboard state
   const [dashboardState, setDashboardState] = useState(() => {
     try {
       const savedState = getDashboardState();
       return {
         ...savedState,
-        category: 'all' as NewsCategory, // Always start with default category
         dateFilter: null,
         searchQuery: '',
       };
@@ -119,6 +118,20 @@ const Index = () => {
       }));
     }
   }, [profile]);
+
+  // Apply preferred default category from profile on first load (unless URL specifies a category)
+  useEffect(() => {
+    const categoryParam = searchParams.get('category');
+    if (categoryParam) return; // respect explicit category in URL
+    const preferred = profile?.preferred_category as NewsCategory | undefined;
+    if (!preferred) return;
+    setDashboardState(prev => {
+      if (prev.category === preferred) return prev;
+      const next = { ...prev, category: preferred };
+      saveDashboardState({ category: preferred });
+      return next;
+    });
+  }, [profile?.preferred_category, searchParams]);
 
   // Computed values
   const filteredArticles = useMemo(() => {
