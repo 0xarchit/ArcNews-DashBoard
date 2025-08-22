@@ -27,8 +27,8 @@ export const ArticleCard = ({ article, viewMode, onViewSummary, onViewContent, o
   const { user, profile } = useAuth();
   const { toast } = useToast();
   const { addBookmark, removeBookmark, isBookmarked } = useBookmarks();
-  // Use article.category when available, otherwise fall back to the active page category
-  const effectiveCategory = (article.category ?? activeCategory) as NewsCategory;
+  // Use article.category when available, otherwise fall back to the active page category, then 'all' as a safe default
+  const effectiveCategory = (article.category ?? activeCategory ?? 'all') as NewsCategory;
   const [isLiked, setIsLiked] = useState(() => {
     if (!profile?.username) return false;
     return article.liked_by.includes(profile.username);
@@ -59,7 +59,7 @@ export const ArticleCard = ({ article, viewMode, onViewSummary, onViewContent, o
     setLikesCount(prev => isLiked ? prev - 1 : prev + 1);
 
     try {
-  await toggleLike(profile.user_id, profile.username, article.category, article.id);
+      await toggleLike(profile.user_id, profile.username, effectiveCategory, article.id);
       onLikeUpdate?.(article.id, isLiked ? likesCount - 1 : likesCount + 1, !isLiked);
     } catch (error) {
       // Revert optimistic update on error
@@ -78,7 +78,7 @@ export const ArticleCard = ({ article, viewMode, onViewSummary, onViewContent, o
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
     
-    const shareUrl = `${window.location.origin}/dashboard?category=${article.category}&id=${article.id}`;
+  const shareUrl = `${window.location.origin}/dashboard?category=${encodeURIComponent(effectiveCategory)}&id=${article.id}`;
     
     try {
       await navigator.clipboard.writeText(shareUrl);

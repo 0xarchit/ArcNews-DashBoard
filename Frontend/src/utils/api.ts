@@ -9,6 +9,7 @@ import {
   setCachedNews,
   getCachedPost,
   setCachedPost,
+  clearCachedPost,
 } from "./cache";
 
 // Base URL for API from environment
@@ -196,6 +197,11 @@ export const toggleLike = async (
         response.status
       );
     }
+
+    // Invalidate cached post to prevent stale like state
+    try {
+      clearCachedPost(category, id);
+    } catch {}
   } catch (error) {
     if (error instanceof APIError) {
       throw error;
