@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+message: "If you reference ArcNews in academic or technical work, please cite this project."
+title: "ArcNews - Full-Stack News Dashboard"
+abstract: "A modular, production-style news dashboard showcasing a React + Vite frontend, Cloudflare Workers + D1 backend, a FastAPI news ingestor, and a Puppeteer-based content extractor."
+type: "web-app"
+date-released: 2025-08-22
+authors:
+  - family-names: "0xArchit"
+    given-names: "Archit"
+    email: "mail@0xarchit.is-a.dev"
+  - name: "ArcNews Contributors"
+repository-code: "https://github.com/0xarchit/ArcNews-DashBoard"
+url: "https://arcnews.0xarchit.is-a.dev"
+license: "Custom (see LICENSE)"
+keywords:
+  - news
+  - dashboard
+  - cloudflare
+  - workers
+  - d1
+  - react
+  - vite
+  - fastapi
+  - puppeteer
+  - scraper
