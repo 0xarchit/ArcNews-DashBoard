@@ -5,6 +5,16 @@ const { JSDOM } = require('jsdom');
 const { Readability } = require('@mozilla/readability');
 const axios = require('axios');
 const cors = require('cors');
+require('dotenv').config();
+
+const CEREBRAS_API_KEY = process.env.CEREBRAS_API_KEY || '';
+
+if (!CEREBRAS_API_KEY) {
+  console.warn('Warning: CEREBRAS_API_KEY is not set in environment. LLM requests may fail.');
+} else {
+  axios.defaults.headers.common['Authorization'] = `Bearer ${CEREBRAS_API_KEY}`;
+}
+
 puppeteer.use(StealthPlugin());
 
 const app = express();
@@ -135,23 +145,38 @@ app.post('/extract-content', async (req, res) => {
     }
 
     // Summarize with LLM
-    const endpoint = 'https://text.pollinations.ai/openai/v1/chat/completions';
+    const endpoint = 'https://api.cerebras.ai/v1/chat/completions';
     const promptSource = cleanedContent || `Title: ${title || ''}\nDescription: ${description || ''}`;
     let summary = '';
     try {
-      const llmRes = await axios.post(endpoint, {
-        model: 'openai-fast',
+      if (!CEREBRAS_API_KEY) {
+      throw new Error('CEREBRAS_API_KEY is not set. Set it in your environment to call the LLM.');
+      }
+
+      const llmRes = await axios.post(
+      endpoint,
+      {
+        model: 'llama-4-scout-17b-16e-instruct',
         messages: [
-          { role: 'system', content: 'You are a professional news summariser that summarises news article in 150 words in simple english language' },
-          { role: 'user', content: promptSource }
+        { role: 'system', content: 'You are a professional news summariser that summarises news article under 150 words in simple english language return only main summary no extras' },
+        { role: 'user', content: promptSource }
         ],
         max_tokens: 300,
         temperature: 0.7
-      });
+      },
+      {
+        headers: {
+        Authorization: `Bearer ${CEREBRAS_API_KEY}`,
+        'Content-Type': 'application/json'
+        }
+      }
+      );
+
       summary = llmRes.data.choices?.[0]?.message?.content?.trim() || '';
     } catch (llmErr) {
       console.error('LLM summarization error:', llmErr.message);
     }
+
     // Return data including summary
     res.json({
       url,
