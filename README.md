@@ -64,12 +64,12 @@ If you find ArcNews useful for learning, prototyping, or as a reference, please 
 
 ## 2. Preview
 
-`Landing Page`![Landing](assets/landing.png)    
-`Dashboard`![Dashboard](assets/Dashboard.png)    
-`Summary`![Summary](assets/Summary.png)  
-`Profile`![Profile](assets/Profile.png)
+`Landing Page`![Landing](Assets/landing.png)    
+`Dashboard`![Dashboard](Assets/Dashboard.png)    
+`Summary`![Summary](Assets/Summary.png)  
+`Profile`![Profile](Assets/Profile.png)
 
-> Complete Preview Video: [arcnews.mkv](assets/arcnews.mkv)
+> Complete Preview Video: [arcnews.mkv](Assets/arcnews.mkv)
 ---
 
 ## 3. System Architecture
