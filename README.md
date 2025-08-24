@@ -16,6 +16,30 @@
 
 ---
 
+## Table of Contents
+
+- [Live Demo & Links](#live-demo--links)
+- [⭐ Support This Project](#-support-this-project)
+- [1. Overview](#1-overview)
+- [2. System Architecture](#2-system-architecture)
+  - [High-Level Diagram](#high-level-diagram)
+  - [Data Flow: Article Ingestion (Scheduled)](#data-flow-article-ingestion-scheduled)
+  - [Data Flow: Summary Enrichment (On-Demand)](#data-flow-summary-enrichment-on-demand)
+- [3. Services In-Depth](#3-services-in-depth)
+  - [3.1. Frontend](#31-frontend)
+  - [3.2. WorkerDBApi](#32-workerdbapi)
+  - [3.3. NewsAPI](#33-newsapi)
+  - [3.4. ContentExtract](#34-contentextract)
+- [4. Detailed API Reference](#4-detailed-api-reference)
+  - [4.1. WorkerDBApi Endpoints](#41-workerdbapi-endpoints)
+  - [4.2. ContentExtract Endpoints](#42-contentextract-endpoints)
+  - [4.3. NewsAPI Endpoints](#43-newsapi-endpoints)
+- [5. Local Development](#5-local-development)
+- [6. Deployment](#6-deployment)
+- [7. Future Goals](#7-future-goals)
+- [8. Troubleshooting](#8-troubleshooting)
+- [License](#license-©-2025-0xarchit)
+
 ## ⭐ Support This Project
 
 If you find ArcNews useful for learning, prototyping, or as a reference, please consider starring the repository. Your support is greatly appreciated and helps the project's visibility.
@@ -482,7 +506,24 @@ Server-to-server API consumed by `WorkerDBApi`.
 
 ---
 
-## 7. Troubleshooting
+## 7. Future Goals
+
+- Google One‑Tap / Social Sign‑In: add Google One‑Tap and additional OAuth providers (Apple, Twitter) for frictionless, secure sign-in and streamlined account linking.
+- Enhanced performance & UX: implement server-side caching, CDN edge caching, D1 query optimizations, image lazy‑loading and HTTP/2 to reduce TTFB and improve perceived load times.
+- Broader source coverage: expand NewsAPI feed lists to include more mainstream outlets, niche blogs, podcasts, and paid/partner APIs with adaptive scraping strategies and source weighting.
+- Richer summarization pipeline: support configurable LLM backends, hybrid extractive+abstractive summaries, length presets, and cached summary versions to reduce costs and latency.
+- Personalization & recommendations: per‑user topic preferences, collaborative filtering, session‑based ranking, and push personalization signals to deliver more relevant headlines.
+- Offline & sync support: add PWA capabilities, background sync, and local read‑later queues so users can read saved articles offline.
+- Real‑time updates & notifications: web push and in‑app notifications for breaking news, followed topics, and bookmark/like activity.
+- Multi‑language & localization: automatic language detection, on‑the‑fly translation, localized UI strings, and right‑to‑left support where required.
+- Accessibility & SEO improvements: audit and remediate WCAG issues, improve semantic markup, and enhance metadata for social previews and indexing.
+- Fact‑checking & content quality signals: integrate source reliability scores, third‑party fact‑check APIs, and community reporting flows to surface trustworthy content.
+- AI Chatbot Integration: Implement an AI-powered chatbot to enable users to discuss news topics, ask questions, and verify the credibility of articles using integrated fact-checking APIs and source reliability data.
+- Monetization & community: non‑intrusive monetization (sponsorships, donations, premium features, non irritating ads placements), contribution guidelines, and curated editorial channels to build a community around the project.
+
+---
+
+## 8. Troubleshooting
 
 -   **`QuotaExceededError` in Browser**: This is handled automatically by the frontend's cache eviction logic. If it persists, the user's `localStorage` is completely full.
 -   **Bookmark Failures**: Check the browser's developer console for errors from Supabase. Ensure the user is logged in and RLS policies are correct.
