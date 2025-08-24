@@ -87,7 +87,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string, username: string, fullName?: string) => {
     const redirectUrl = `${window.location.origin}/`;
-    
+
+    // Pre-check for existing email & username using RPCs (works with RLS). Cast to any to bypass generated-typing gaps.
+    try {
+      const rpcClient = supabase as any;
+      const [{ data: emailExists, error: emailErr }, { data: userExists, error: userErr }] = await Promise.all([
+        rpcClient.rpc('check_email_exists', { mail: email }),
+        rpcClient.rpc('check_username_exists', { uname: username }),
+      ]);
+
+      if (emailErr) console.warn('Email check RPC error:', emailErr);
+      if (userErr) console.warn('Username check RPC error:', userErr);
+
+      if (emailExists === true || userExists === true) {
+        return { error: { message: 'Account already exists. Please sign in.' } } as { error: any };
+      }
+    } catch (e) {
+      console.warn('Unexpected error while checking email/username:', e);
+      // Continue to attempt signup regardless
+    }
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -99,7 +118,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
     });
-    
+
+    // Normalize duplicate email error message if it occurs
+    if (error) {
+      const msg = String(error.message || '').toLowerCase();
+      if (msg.includes('already registered') || msg.includes('unique constraint') || msg.includes('duplicate key')) {
+        return { error: { message: 'Account already exists. Please sign in.' } } as { error: any };
+      }
+    }
+
     return { error };
   };
 

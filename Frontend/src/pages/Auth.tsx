@@ -44,12 +44,21 @@ const Auth = () => {
         }
         const { error } = await signUp(email, password, username, fullName);
         if (error) {
-          setError(error.message);
+          const msg = String(error?.message || '')
+            .toLowerCase();
+          // Friendly error mapping for duplicate email/username
+          if (msg.includes('already registered') || msg.includes('already exist') || msg.includes('exists')) {
+            setError('Account already exists. Please sign in.');
+          } else {
+            setError(error.message || 'Sign up failed');
+          }
         } else {
           toast({
             title: "Account created successfully!",
             description: "Please check your email to verify your account.",
           });
+          // After successful signup, switch to sign-in mode
+          setMode('signin');
         }
       } else {
         const { error } = await signIn(email, password);
