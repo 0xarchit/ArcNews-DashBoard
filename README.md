@@ -18,31 +18,30 @@
 
 ## Table of Contents
 
-- [Live Demo & Links](#live-demo--links)
-- [⭐ Support This Project](#-support-this-project)
 - [1. Overview](#1-overview)
-- [2. System Architecture](#2-system-architecture)
-  - [High-Level Diagram](#high-level-diagram)
-  - [Data Flow: Article Ingestion (Scheduled)](#data-flow-article-ingestion-scheduled)
-  - [Data Flow: Summary Enrichment (On-Demand)](#data-flow-summary-enrichment-on-demand)
-- [3. Services In-Depth](#3-services-in-depth)
-  - [3.1. Frontend](#31-frontend)
-  - [3.2. WorkerDBApi](#32-workerdbapi)
-  - [3.3. NewsAPI](#33-newsapi)
-  - [3.4. ContentExtract](#34-contentextract)
-- [4. Detailed API Reference](#4-detailed-api-reference)
-  - [4.1. WorkerDBApi Endpoints](#41-workerdbapi-endpoints)
-  - [4.2. ContentExtract Endpoints](#42-contentextract-endpoints)
-  - [4.3. NewsAPI Endpoints](#43-newsapi-endpoints)
-- [5. Local Development](#5-local-development)
-- [6. Deployment](#6-deployment)
-- [7. Future Goals](#7-future-goals)
-- [8. Troubleshooting](#8-troubleshooting)
-- [License](#license-©-2025-0xarchit)
+- [2. Preview](#2-preview)
+- [3. System Architecture](#3-system-architecture)
+  - [3.1. High-Level Diagram](#31-high-level-diagram)
+  - [3.2. Data Flow: Article Ingestion (Scheduled)](#32-data-flow-article-ingestion-scheduled)
+  - [3.3. Data Flow: Summary Enrichment (On-Demand)](#33-data-flow-summary-enrichment-on-demand)
+- [4. Services In-Depth](#4-services-in-depth)
+  - [4.1. Frontend](#41-frontend)
+  - [4.2. WorkerDBApi](#42-workerdbapi)
+  - [4.3. NewsAPI](#43-newsapi)
+  - [4.4. ContentExtract](#44-contentextract)
+- [5. Detailed API Reference](#5-detailed-api-reference)
+  - [5.1. WorkerDBApi Endpoints](#51-workerdbapi-endpoints)
+  - [5.2. ContentExtract Endpoints](#52-contentextract-endpoints)
+  - [5.3. NewsAPI Endpoints](#53-newsapi-endpoints)
+- [6. Local Development](#6-local-development)
+  - [6.1. Prerequisites](#61-prerequisites)
+  - [6.2. Setup Instructions](#62-setup-instructions)
+- [7. Deployment](#7-deployment)
+- [8. Future Goals](#8-future-goals)
+- [9. Troubleshooting](#9-troubleshooting)
+- [License](LICENSE)
 
-## ⭐ Support This Project
 
-If you find ArcNews useful for learning, prototyping, or as a reference, please consider starring the repository. Your support is greatly appreciated and helps the project's visibility.
 
 ---
 
@@ -57,13 +56,27 @@ ArcNews is a comprehensive, production-style news dashboard designed with a modu
 
 This document provides a deep dive into the project's architecture, the inner workings of each service, complete API documentation, and guides for local development and deployment.
 
+### ⭐ Support This Project
+
+If you find ArcNews useful for learning, prototyping, or as a reference, please consider starring the repository. Your support is greatly appreciated and helps the project's visibility.
+
 ---
 
-## 2. System Architecture
+## 2. Preview
+
+`Landing Page`![Landing](assets/landing.png)    
+`Dashboard`![Dashboard](assets/Dashboard.png)    
+`Summary`![Summary](assets/Summary.png)  
+`Profile`![Profile](assets/Profile.png)
+
+> Complete Preview Video: [arcnews.mkv](assets/arcnews.mkv)
+---
+
+## 3. System Architecture
 
 The architecture is designed for scalability and separation of concerns. The frontend is completely decoupled from the data sourcing and processing logic, communicating only with the core API worker and Supabase for user-specific data.
 
-### High-Level Diagram
+### 3.1. High-Level Diagram
 
 This diagram illustrates the primary components and their interactions.
 
@@ -105,7 +118,7 @@ flowchart TB
 -   **Orchestration Layer**: `WorkerDBApi` acts as the central orchestrator. It handles all server-to-server communication, shielding the frontend from the complexity of data ingestion and processing.
 -   **Scalable Microservices**: `NewsAPI` and `ContentExtract` are independent services that can be scaled or replaced without impacting the rest of the system.
 
-### Data Flow: Article Ingestion (Scheduled)
+### 3.2. Data Flow: Article Ingestion (Scheduled)
 
 This sequence shows how new articles are periodically fetched and stored.
 
@@ -125,7 +138,7 @@ sequenceDiagram
   WKR->>WKR: Update 'last_refresh' timestamp in metadata
 ```
 
-### Data Flow: Summary Enrichment (On-Demand)
+### 3.3 Data Flow: Summary Enrichment (On-Demand)
 
 This sequence shows how an article's full content and summary are fetched the first time a user requests them.
 
@@ -152,9 +165,9 @@ sequenceDiagram
 
 ---
 
-## 3. Services In-Depth
+## 4. Services In-Depth
 
-### 3.1. Frontend
+### 4.1. Frontend
 
 The frontend is a modern, single-page application providing a seamless and dynamic user experience.
 
@@ -235,7 +248,7 @@ The frontend is a modern, single-page application providing a seamless and dynam
       FOR DELETE USING (auth.uid() = user_id);
     ```
 
-### 3.2. WorkerDBApi
+### 4.2. WorkerDBApi
 
 This is the heart of the backend, handling data persistence, orchestration, and serving all content to the frontend.
 
@@ -280,7 +293,7 @@ This is the heart of the backend, handling data persistence, orchestration, and 
         -   `newsApiUrl`: The base URL for your `NewsAPI` service. The worker appends the category to it (e.g., `https://my-news-api.vercel.app/technology`).
         -   `'add extract url'`: The full URL for your `ContentExtract` service's `/extract-content` endpoint.
 
-### 3.3. NewsAPI
+### 4.3. NewsAPI
 
 This service acts as the data provider, abstracting the complexity of fetching and parsing from various news sources.
 
@@ -295,7 +308,7 @@ This service acts as the data provider, abstracting the complexity of fetching a
 
 -   **CORS**: Configured to only allow requests from the deployed `WorkerDBApi` origin for security.
 
-### 3.4. ContentExtract
+### 4.4. ContentExtract
 
 A powerful microservice dedicated to turning a URL into clean, readable content and a summary.
 
@@ -314,9 +327,9 @@ A powerful microservice dedicated to turning a URL into clean, readable content 
 
 ---
 
-## 4. Detailed API Reference
+## 5. Detailed API Reference
 
-### 4.1. WorkerDBApi Endpoints
+### 5.1. WorkerDBApi Endpoints
 
 This is the public API consumed by the `Frontend`.
 
@@ -387,7 +400,7 @@ This is the public API consumed by the `Frontend`.
 
 ---
 
-### 4.2. ContentExtract Endpoints
+### 5.2. ContentExtract Endpoints
 
 Server-to-server API consumed by `WorkerDBApi`.
 
@@ -419,7 +432,7 @@ Server-to-server API consumed by `WorkerDBApi`.
 
 ---
 
-### 4.3. NewsAPI Endpoints
+### 5.3. NewsAPI Endpoints
 
 Server-to-server API consumed by `WorkerDBApi`.
 
@@ -444,16 +457,16 @@ Server-to-server API consumed by `WorkerDBApi`.
 
 ---
 
-## 5. Local Development
+## 6. Local Development
 
-### Prerequisites
+### 6.1. Prerequisites
 
 -   Node.js (v18 or newer)
 -   `pnpm` (for Frontend)
 -   Python (v3.11 or newer)
 -   Cloudflare Wrangler CLI
 
-### Setup Instructions
+### 6.2. Setup Instructions
 
 1.  **Clone the repository**:
     ```sh
@@ -497,7 +510,7 @@ Server-to-server API consumed by `WorkerDBApi`.
 
 ---
 
-## 6. Deployment
+## 7. Deployment
 
 -   **Frontend**: Deploy to a static host like **Vercel** or **Netlify**. Set the environment variables in the project settings.
 -   **WorkerDBApi**: Deploy to **Cloudflare Workers**. Create a D1 database and bind it. Set the URLs for the deployed `NewsAPI` and `ContentExtract` services as secrets.
@@ -506,7 +519,7 @@ Server-to-server API consumed by `WorkerDBApi`.
 
 ---
 
-## 7. Future Goals
+## 8. Future Goals
 
 - Google One‑Tap / Social Sign‑In: add Google One‑Tap and additional OAuth providers (Apple, Twitter) for frictionless, secure sign-in and streamlined account linking.
 - Enhanced performance & UX: implement server-side caching, CDN edge caching, D1 query optimizations, image lazy‑loading and HTTP/2 to reduce TTFB and improve perceived load times.
@@ -523,7 +536,7 @@ Server-to-server API consumed by `WorkerDBApi`.
 
 ---
 
-## 8. Troubleshooting
+## 9. Troubleshooting
 
 -   **`QuotaExceededError` in Browser**: This is handled automatically by the frontend's cache eviction logic. If it persists, the user's `localStorage` is completely full.
 -   **Bookmark Failures**: Check the browser's developer console for errors from Supabase. Ensure the user is logged in and RLS policies are correct.
