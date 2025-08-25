@@ -1,6 +1,5 @@
 # ArcNews – Full-Stack News Dashboard
 [![GitHub stars](https://img.shields.io/github/stars/0xarchit/ArcNews-DashBoard?style=flat-square&logo=github)](https://github.com/0xarchit/ArcNews-DashBoard/stargazers)
-[![License](https://img.shields.io/github/license/0xarchit/ArcNews-DashBoard?style=flat-square)](LICENSE)
 [![Issues](https://img.shields.io/github/issues/0xarchit/ArcNews-DashBoard?style=flat-square)](https://github.com/0xarchit/ArcNews-DashBoard/issues)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square)](https://github.com/0xarchit/ArcNews-DashBoard/pulls)
 [![Last Commit](https://img.shields.io/github/last-commit/0xarchit/ArcNews-DashBoard?style=flat-square)](https://github.com/0xarchit/ArcNews-DashBoard)
